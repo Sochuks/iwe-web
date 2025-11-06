@@ -8,11 +8,14 @@ export default function Login() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mockLogin(user, pass)) {
       localStorage.setItem('auth', 'true');
-      router.push('/dashboard');
+      document.cookie = "auth=true; path=/";
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 100);
     } else {
       setError('Invalid credentials');
     }
