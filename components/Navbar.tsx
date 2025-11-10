@@ -118,6 +118,10 @@ export default function Navbar() {
       label: t('navigation.pricing'),
       href: '/pricing',
     },
+    {
+      label: t('navigation.dashboard'),
+      href: '/dashboard',
+    },
   ];
 
   return (

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { fadeInUp, fadeInLeft, fadeInRight, staggerContainer } from '../utils/animations';
 import AnimatedWrapper from '../components/AnimatedWrapper';
 import Navbar from '../components/Navbar';
+import AnimatedSpotlight from '../components/AnimatedSpotlight';
 import { ArrowRight, CheckCircle, Zap, BarChart3, Shield, Users, TrendingUp, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from '../hooks/useTranslation';
@@ -11,8 +12,28 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 export default function Landing() {
   const { t } = useTranslation();
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative overflow-hidden">
       <Navbar />
+      
+      {/* Animated Spotlights */}
+      <AnimatedSpotlight
+        fill="rgba(59, 130, 246, 0.08)"
+        startX={0}
+        startY={0}
+        endX={50}
+        endY={50}
+        duration={4}
+        delay={0}
+      />
+      <AnimatedSpotlight
+        fill="rgba(139, 92, 246, 0.08)"
+        startX={100}
+        startY={0}
+        endX={50}
+        endY={50}
+        duration={4}
+        delay={1}
+      />
       
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4">
