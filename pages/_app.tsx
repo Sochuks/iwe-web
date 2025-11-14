@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useState } from 'react';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { appWithTranslation } from 'next-i18next';
 import SmartSuppChat from '@/components/SmartSuppChat';
 
@@ -24,10 +25,12 @@ function App({ Component, pageProps }: AppProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <Component {...pageProps} />
-        <SmartSuppChat />
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <Component {...pageProps} />
+          <SmartSuppChat />
+        </ThemeProvider>
+      </AuthProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

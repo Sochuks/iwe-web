@@ -1,0 +1,54 @@
+// User interface matching your backend response
+export interface User {
+  id: string;
+  email: string;
+  fullname: string;
+  username?: string;
+  telephone?: string;
+  role_name: string;
+}
+
+// Authentication state
+export interface AuthState {
+  isLoggedIn: boolean;
+  isInitialized: boolean;
+  user: User | null;
+  role_name: string | null;
+}
+
+// Google login response from backend
+export interface GoogleLoginResponse {
+  access_token: string;
+  role_name: string;
+  data: User;
+}
+
+// Auth context type
+export interface AuthContextType {
+  isLoggedIn: boolean;
+  isInitialized: boolean;
+  user: User | null;
+  role_name: string | null;
+  googleLogin: (email: string, fullname: string, telephone: string) => Promise<void>;
+  logout: () => void;
+}
+
+// Google OAuth token response
+export interface GoogleTokenResponse {
+  access_token: string;
+  id_token: string;
+  expires_in: number;
+  token_type: string;
+  scope: string;
+  refresh_token?: string;
+}
+
+// Decoded Google ID token
+export interface GoogleUser {
+  email: string;
+  name?: string;
+  given_name?: string;
+  family_name?: string;
+  picture?: string;
+  sub: string;
+}
