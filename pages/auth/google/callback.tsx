@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
@@ -11,8 +11,14 @@ const GoogleCallback = () => {
   const { googleLogin } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
+    // Prevent multiple executions
+    if (hasProcessed.current) {
+      console.log('⏭️ Already processed, skipping...');
+      return;
+    }
     const handleGoogleCallback = async () => {
       console.log('🎯 Callback page loaded!');
       console.log('📍 Current URL:', window.location.href);
@@ -42,6 +48,9 @@ const GoogleCallback = () => {
         }, 3000);
         return;
       }
+
+      // Mark as processed to prevent re-execution
+      hasProcessed.current = true;
 
       try {
         console.log('🔐 Starting OAuth token exchange...');

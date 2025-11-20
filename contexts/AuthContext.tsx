@@ -94,21 +94,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       console.log('📥 Backend response:', response.data);
 
-      // Extract data from the response
+      // Extract data from the response with safe fallbacks
       const responseData = response.data.data;
+      
+      if (!responseData) {
+        throw new Error('Invalid response structure from backend');
+      }
+
       const access_token = responseData.access_token;
       const role_name = responseData.role_name || 'User';
-      const backendUserData = responseData.data;
+      const backendUserData: any = responseData.data || {};
 
-      // Construct user object
+      // Construct user object with safe fallbacks
       const user: User = {
-        id: backendUserData.id || '',
+        id: backendUserData.id || email, // Use email as fallback ID
         email: email,
         fullname: backendUserData.fullname || fullname,
-        username: backendUserData.username,
+        username: backendUserData.username || email.split('@')[0],
         telephone: backendUserData.telephone || telephone,
         role_name: role_name,
       };
+
+      console.log('👤 Constructed user object:', user);
 
       // Update session and state
       setSession(access_token, role_name, user);
