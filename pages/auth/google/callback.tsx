@@ -14,13 +14,28 @@ const GoogleCallback = () => {
 
   useEffect(() => {
     const handleGoogleCallback = async () => {
+      console.log('🎯 Callback page loaded!');
+      console.log('📍 Current URL:', window.location.href);
+      
       // Get code from URL query params
       const queryParams = new URLSearchParams(window.location.search);
       const code = queryParams.get('code');
       const state = queryParams.get('state');
+      const error = queryParams.get('error');
+
+      console.log('🔍 URL params:', { code: code ? 'EXISTS' : 'MISSING', state, error });
+
+      if (error) {
+        console.error('❌ OAuth error from Google:', error);
+        setError(`Google OAuth error: ${error}`);
+        setTimeout(() => {
+          router.push('/login');
+        }, 3000);
+        return;
+      }
 
       if (!code) {
-        console.error('Authorization code not found.');
+        console.error('❌ Authorization code not found.');
         setError('No authorization code received from Google');
         setTimeout(() => {
           router.push('/login');
@@ -83,19 +98,27 @@ const GoogleCallback = () => {
         await googleLogin(userEmail, userName, userPhone);
         console.log('✅ Login successful!');
       } catch (error: any) {
-        console.error('Authentication error:', error.response?.data || error.message);
+        console.error('❌ Authentication error:', error);
+        console.error('Error details:', error.response?.data || error.message);
+        console.error('Full error object:', JSON.stringify(error, null, 2));
         setError('Authentication failed. Please try again.');
         setIsLoading(false);
         
         setTimeout(() => {
+          console.log('⏰ Redirecting to login...');
           router.push('/login');
         }, 3000);
       }
     };
 
+    console.log('🔄 useEffect triggered. Router ready:', router.isReady);
+    
     // Only run if router is ready
     if (router.isReady) {
+      console.log('✅ Router is ready, calling handleGoogleCallback');
       handleGoogleCallback();
+    } else {
+      console.log('⏳ Waiting for router to be ready...');
     }
   }, [router.isReady, router, googleLogin]);
 
