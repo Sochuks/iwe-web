@@ -19,7 +19,6 @@ Then visit:
 ### 1. **React Query (TanStack Query)**
 Global data fetching and state management configured in `pages/_app.tsx`.
 
-**Usage Example:**
 ```tsx
 import { useQuery } from '@tanstack/react-query';
 

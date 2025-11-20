@@ -29,6 +29,11 @@ const GoogleCallback = () => {
       }
 
       try {
+        console.log('🔐 Starting OAuth token exchange...');
+        console.log('Code:', code);
+        console.log('Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+        console.log('Redirect URI:', process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URL);
+        
         // Step 1: Exchange code for tokens
         const tokenResponse = await axios.post<GoogleTokenResponse>(
           'https://oauth2.googleapis.com/token',
@@ -46,12 +51,14 @@ const GoogleCallback = () => {
           }
         );
 
+        console.log('✅ Token exchange successful');
         const { id_token, access_token } = tokenResponse.data;
 
         // Step 2: Decode ID token to get email and name
         const user: GoogleUser = jwtDecode(id_token);
         const userEmail = user.email;
         const userName = user.name || 'Google User'; // Fallback if name isn't provided
+        console.log('👤 User info:', { email: userEmail, name: userName });
 
         // Step 3: Fetch phone number using People API (requires access_token)
         let userPhone = '';
@@ -65,13 +72,16 @@ const GoogleCallback = () => {
             }
           );
           userPhone = peopleResponse.data.phoneNumbers?.[0]?.value || '';
+          console.log('📞 Phone number:', userPhone);
         } catch (phoneError) {
           console.warn('Failed to fetch phone number:', phoneError);
           // Proceed without phone number if unavailable
         }
 
         // Step 4: Call googleLogin with email, name, and phone
+        console.log('🚀 Calling backend googleLogin...');
         await googleLogin(userEmail, userName, userPhone);
+        console.log('✅ Login successful!');
       } catch (error: any) {
         console.error('Authentication error:', error.response?.data || error.message);
         setError('Authentication failed. Please try again.');

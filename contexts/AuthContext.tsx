@@ -71,19 +71,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
       
+      console.log('🔧 Backend URL:', backendUrl);
+      
       if (!backendUrl) {
+        console.error('❌ Backend API URL is not configured!');
         throw new Error('Backend API URL is not configured');
       }
 
+      const loginUrl = `${backendUrl}/google/user/login`;
+      console.log('📤 Sending login request to:', loginUrl);
+      console.log('📦 Payload:', { email, fullname, telephone });
+
       // Send email, fullname, and telephone to the backend
       const response = await axios.post<{ data: GoogleLoginResponse }>(
-        `${backendUrl}/google/user/login`,
+        loginUrl,
         {
           email,
           fullname,
           telephone,
         }
       );
+
+      console.log('📥 Backend response:', response.data);
 
       // Extract data from the response
       const responseData = response.data.data;
