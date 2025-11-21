@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     telephone: string
   ): Promise<void> => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL;
       
       console.log('🔧 Backend URL:', backendUrl);
       
