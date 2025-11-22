@@ -11,29 +11,54 @@ const isProd = typeof window !== 'undefined' &&
   (window.location.hostname.endsWith('iweapps.com') || 
    process.env.NODE_ENV === 'production');
 
-// Base WebSocket URL
-const WS_BASE_URL = isProd ? 'wss://api.iweapps.com' : 'ws://localhost:8080';
+// Base WebSocket URL - use environment variable if available, otherwise fallback
+const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || 
+  (isProd ? 'wss://api.iweapps.com' : 'ws://localhost:8080');
+
+// Debug logging for WebSocket configuration
+console.log('🌐 WebSocket Configuration:', {
+  isProd,
+  WS_BASE_URL,
+  hostname: typeof window !== 'undefined' ? window.location.hostname : 'server',
+  protocol: typeof window !== 'undefined' ? window.location.protocol : 'server',
+  env: process.env.NODE_ENV
+});
 
 // Get auth token from localStorage for development
 const getDevAuthToken = (): string | null => {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('dev_jwt');
+  // Try to get token from auth context first, then fallback to localStorage
+  try {
+    const authState = JSON.parse(localStorage.getItem('auth_state') || '{}');
+    return authState?.token || localStorage.getItem('dev_jwt');
+  } catch (e) {
+    return localStorage.getItem('dev_jwt');
+  }
 };
 
 // Construct WebSocket URL with proper authentication
 const getWebSocketUrl = (isReactNative: boolean = false): string => {
-  if (isProd) {
-    return isReactNative ? `${WS_BASE_URL}/ws/auth` : `${WS_BASE_URL}/ws`;
+  if (isReactNative) {
+    return `${WS_BASE_URL}/ws/auth`;
   }
   
-  // Development mode - use token or fallback to test user
+  if (isProd) {
+    // In production, use cookie-based auth (HttpOnly cookie)
+    console.log('🔒 Using cookie-based WebSocket authentication');
+    return `${WS_BASE_URL}/ws`;
+  }
+  
+  // In development, prefer token-based auth if available
   const token = getDevAuthToken();
   if (token) {
+    console.log('🔑 Using dev JWT token for WebSocket connection');
     return `${WS_BASE_URL}/ws?token=${encodeURIComponent(token)}`;
   }
   
-  // Fallback to test user in development
-  return `${WS_BASE_URL}/ws?user_id=c0a8012e-0000-4000-8000-000000000001`;
+  // Fallback to public connection with test user ID
+  const testUserId = 'c0a8012e-0000-4000-8000-000000000001';
+  console.log('👤 Using public WebSocket connection with test user ID');
+  return `${WS_BASE_URL}/ws?user_id=${testUserId}`;
 };
 
 const WS_URL = getWebSocketUrl();
@@ -86,13 +111,36 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       const isReactNative = typeof navigator !== 'undefined' && 
         navigator.product === 'ReactNative';
       
-      const wsUrl = isReactNative && token ? WS_AUTH_URL : WS_URL;
+      const wsUrl = WS_URL;
+      console.log('🔌 Connecting to WebSocket:', wsUrl);
       
-      // Create WebSocket connection
-      const ws = isReactNative && token ? 
-        // @ts-ignore - React Native supports headers in WebSocket constructor
-        new WebSocket(wsUrl, { headers: { Authorization: `Bearer ${token}` } }) :
-        new WebSocket(wsUrl);
+      // In production, we rely on cookies for authentication
+      // The browser will automatically include the HttpOnly cookie
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+      
+      // Debug WebSocket events
+      ws.addEventListener('open', (event) => {
+        console.log('✅ WebSocket connection established');
+      });
+      
+      ws.addEventListener('error', (error) => {
+        console.error('❌ WebSocket error:', {
+          type: 'WebSocket Error',
+          timestamp: new Date().toISOString(),
+          error,
+          readyState: ws.readyState,
+          url: wsUrl
+        });
+      });
+      
+      ws.addEventListener('close', (event) => {
+        console.log('🔌 WebSocket connection closed:', {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean
+        });
+      });
 
       ws.onopen = (event) => {
         debug('WebSocket Connected', {

@@ -79,9 +79,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('Backend API URL is not configured');
       }
 
-      const loginUrl = `${backendUrl}/google/user/login`;
+      const loginUrl = `${backendUrl}/api/v1/google/user/login`;
       console.log('📤 Sending login request to:', loginUrl);
       console.log('📦 Payload:', { email, fullname, telephone });
+
+      // Configure axios to include credentials (cookies) in the request
+      const axiosConfig = {
+        withCredentials: true, // This ensures cookies are sent with the request
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        }
+      };
 
       // Send email, fullname, and telephone to the backend
       const response = await axios.post<{ data: GoogleLoginResponse }>(
@@ -90,8 +99,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           email,
           fullname,
           telephone,
-        }
+        },
+        axiosConfig
       );
+      
+      console.log('🔑 Login response headers:', response.headers);
 
       console.log('📥 Backend response:', response.data);
 
@@ -125,7 +137,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         responseData.data
       );
 
-      // In development, store the token for WebSocket authentication
+      // Store the auth state in localStorage for WebSocket access
+      if (typeof window !== 'undefined') {
+        try {
+          const authState = {
+            token: responseData.access_token,
+            user: responseData.data,
+            role: responseData.role_name,
+            timestamp: Date.now()
+          };
+          localStorage.setItem('auth_state', JSON.stringify(authState));
+          console.log('🔐 Stored auth state for WebSocket');
+        } catch (e) {
+          console.warn('Failed to store auth state in localStorage', e);
+        }
+      }
+
+      // In development, also store the token separately for backward compatibility
       if (process.env.NODE_ENV !== 'production') {
         setDevAuthToken(responseData.access_token);
       }
@@ -164,6 +192,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     // Clear session data
     clearSession();
+    
+    // Clear WebSocket auth state
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('auth_state');
+        console.log('🔒 Removed WebSocket auth state');
+      } catch (e) {
+        console.warn('Failed to clear WebSocket auth state', e);
+      }
+    }
     
     // Clear development WebSocket token
     if (process.env.NODE_ENV !== 'production') {
