@@ -70,7 +70,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     telephone: string
   ): Promise<void> => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+      // Ensure the backend URL doesn't end with a slash
+      let backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '');
       
       console.log('🔧 Backend URL:', backendUrl);
       
@@ -79,7 +80,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('Backend API URL is not configured');
       }
 
-      const loginUrl = `${backendUrl}/api/v1/google/user/login`;
+      // If the backend URL already includes /api/v1, don't add it again
+      const apiPath = backendUrl.includes('/api/v1') ? '' : '/api/v1';
+      const loginUrl = `${backendUrl}${apiPath}/google/user/login`;
+      
       console.log('📤 Sending login request to:', loginUrl);
       console.log('📦 Payload:', { email, fullname, telephone });
 
