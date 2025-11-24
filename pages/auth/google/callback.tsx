@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
@@ -11,16 +11,37 @@ const GoogleCallback = () => {
   const { googleLogin } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasProcessed = useRef(false);
 
   useEffect(() => {
+    // Prevent multiple executions
+    if (hasProcessed.current) {
+      console.log('⏭️ Already processed, skipping...');
+      return;
+    }
     const handleGoogleCallback = async () => {
+      console.log('🎯 Callback page loaded!');
+      console.log('📍 Current URL:', window.location.href);
+      
       // Get code from URL query params
       const queryParams = new URLSearchParams(window.location.search);
       const code = queryParams.get('code');
       const state = queryParams.get('state');
+      const error = queryParams.get('error');
+
+      console.log('🔍 URL params:', { code: code ? 'EXISTS' : 'MISSING', state, error });
+
+      if (error) {
+        console.error('❌ OAuth error from Google:', error);
+        setError(`Google OAuth error: ${error}`);
+        setTimeout(() => {
+          router.push('/login');
+        }, 3000);
+        return;
+      }
 
       if (!code) {
-        console.error('Authorization code not found.');
+        console.error('❌ Authorization code not found.');
         setError('No authorization code received from Google');
         setTimeout(() => {
           router.push('/login');
@@ -28,7 +49,15 @@ const GoogleCallback = () => {
         return;
       }
 
+      // Mark as processed to prevent re-execution
+      hasProcessed.current = true;
+
       try {
+        console.log('🔐 Starting OAuth token exchange...');
+        console.log('Code:', code);
+        console.log('Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+        console.log('Redirect URI:', process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URL);
+        
         // Step 1: Exchange code for tokens
         const tokenResponse = await axios.post<GoogleTokenResponse>(
           'https://oauth2.googleapis.com/token',
@@ -46,12 +75,14 @@ const GoogleCallback = () => {
           }
         );
 
+        console.log('✅ Token exchange successful');
         const { id_token, access_token } = tokenResponse.data;
 
         // Step 2: Decode ID token to get email and name
         const user: GoogleUser = jwtDecode(id_token);
         const userEmail = user.email;
         const userName = user.name || 'Google User'; // Fallback if name isn't provided
+        console.log('👤 User info:', { email: userEmail, name: userName });
 
         // Step 3: Fetch phone number using People API (requires access_token)
         let userPhone = '';
@@ -65,27 +96,38 @@ const GoogleCallback = () => {
             }
           );
           userPhone = peopleResponse.data.phoneNumbers?.[0]?.value || '';
+          console.log('📞 Phone number:', userPhone);
         } catch (phoneError) {
           console.warn('Failed to fetch phone number:', phoneError);
           // Proceed without phone number if unavailable
         }
 
         // Step 4: Call googleLogin with email, name, and phone
+        console.log('🚀 Calling backend googleLogin...');
         await googleLogin(userEmail, userName, userPhone);
+        console.log('✅ Login successful!');
       } catch (error: any) {
-        console.error('Authentication error:', error.response?.data || error.message);
+        console.error('❌ Authentication error:', error);
+        console.error('Error details:', error.response?.data || error.message);
+        console.error('Full error object:', JSON.stringify(error, null, 2));
         setError('Authentication failed. Please try again.');
         setIsLoading(false);
         
         setTimeout(() => {
+          console.log('⏰ Redirecting to login...');
           router.push('/login');
         }, 3000);
       }
     };
 
+    console.log('🔄 useEffect triggered. Router ready:', router.isReady);
+    
     // Only run if router is ready
     if (router.isReady) {
+      console.log('✅ Router is ready, calling handleGoogleCallback');
       handleGoogleCallback();
+    } else {
+      console.log('⏳ Waiting for router to be ready...');
     }
   }, [router.isReady, router, googleLogin]);
 
